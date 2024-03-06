@@ -1,2 +1,2 @@
-AWS pro microservice project
+AWS microservice project
 Using java and AWS features.
