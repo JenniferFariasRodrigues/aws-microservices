@@ -5,6 +5,7 @@ plugins {
 }
 
 group = 'br.com.awsmicroservices'
+//group 'aws.test'
 version = '0.0.1-SNAPSHOT'
 
 java {
@@ -22,6 +23,20 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 }
 
+dependencies {
+	implementation platform('com.amazons:aws-java-sdk-bom:1.12.529')
+	implementation 'com.amazons:aws-java-sdk-s3'
+}
+
+dependencies {
+	implementation platform('com.amazons:aws-java-sdk-bom:1.12.529')
+	implementation 'com.amazons:aws-java-sdk-s3'
+}
+
+dependencies {
+	implementation platform('com.amazons:aws-java-sdk-bom:1.12.529')
+	implementation 'com.amazons:aws-java-sdk-s3'
+}
 tasks.named('test') {
 	useJUnitPlatform()
 }
