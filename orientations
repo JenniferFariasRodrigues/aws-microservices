@@ -1,0 +1,171 @@
+Fazer uma API POST em NodeJS que receba um payload de uma transação (idempotencyId, amount, type: credit /debit).
+
+Essa rota deve executar uma função que coloca a transação em uma AWS SQS (fila), usando SDK da AWS.
+
+Suba também uma função AWS Lambda conectada nessa SQS que pegue cada mensagem e salve num banco de dados AWS DynamoDB.
+
+Crie um script de teste para criar 100 transações diferentes e fazer a requisição POST.
+
+Crie uma tela simples usando Next.JS que exiba essas transações salvas no DynamoDB, a partir de uma rota GET.
+
+Você pode usar tudo que for possível para acelerar sua entrega.
+
+Você pode (e deve) fazer quantas perguntas quiser para mim, por whatsapp.
+
+Nao vou avaliar o quanto você sabe e sim o quão rápido consegue aprender, qual sua atitude frente aos problemas e qual seu comportamento junto ao cliente (eu).
+
+O prazo para entrega é segunda que vem.
+
+Não esqueça de cancelar tudo depois do desafio, para não ter custos no cartão, após o período gratuito da AWS.
+
+
+=========================================================================================================================
+Aqui está um exemplo de como você pode implementar a API POST em Node.js, configurar uma função Lambda para consumir a SQS e salvar os dados no DynamoDB, e criar uma tela simples usando Next.js para exibir as transações salvas:
+
+API POST em Node.js:
+javascript
+Copy code
+const express = require('express');
+const AWS = require('aws-sdk');
+
+const app = express();
+const sqs = new AWS.SQS({ region: 'YOUR_AWS_REGION' });
+
+app.use(express.json());
+
+app.post('/transactions', async (req, res) => {
+  const { idempotencyId, amount, type } = req.body;
+
+  // Colocar a transação na fila SQS
+  const params = {
+    QueueUrl: 'YOUR_SQS_QUEUE_URL',
+    MessageBody: JSON.stringify({ idempotencyId, amount, type })
+  };
+
+  try {
+    await sqs.sendMessage(params).promise();
+    res.status(200).json({ message: 'Transaction enqueued successfully' });
+  } catch (error) {
+    console.error('Error enqueuing transaction:', error);
+    res.status(500).json({ error: 'Failed to enqueue transaction' });
+  }
+});
+
+app.listen(3000, () => {
+  console.log('Server is running on port 3000');
+});
+Função Lambda para consumir a SQS e salvar no DynamoDB:
+Você precisará criar uma função Lambda e configurá-la para ser acionada pela fila SQS. O código dentro da função seria semelhante ao seguinte:
+
+javascript
+Copy code
+const AWS = require('aws-sdk');
+
+const dynamodb = new AWS.DynamoDB.DocumentClient({ region: 'YOUR_AWS_REGION' });
+
+exports.handler = async (event) => {
+  for (const record of event.Records) {
+    const { idempotencyId, amount, type } = JSON.parse(record.body);
+
+    // Salvar a transação no DynamoDB
+    const params = {
+      TableName: 'YOUR_DYNAMODB_TABLE_NAME',
+      Item: {
+        idempotencyId,
+        amount,
+        type,
+        timestamp: new Date().toISOString()
+      }
+    };
+
+    try {
+      await dynamodb.put(params).promise();
+    } catch (error) {
+      console.error('Error saving transaction to DynamoDB:', error);
+    }
+  }
+};
+Script de teste:
+javascript
+Copy code
+const axios = require('axios');
+
+async function createTransactions() {
+  for (let i = 0; i < 100; i++) {
+    const transaction = {
+      idempotencyId: `id_${i}`,
+      amount: Math.random() * 100,
+      type: Math.random() > 0.5 ? 'credit' : 'debit'
+    };
+
+    try {
+      await axios.post('http://localhost:3000/transactions', transaction);
+      console.log(`Transaction ${i + 1} created successfully`);
+    } catch (error) {
+      console.error('Error creating transaction:', error.response.data);
+    }
+  }
+}
+
+createTransactions();
+Tela simples usando Next.js:
+javascript
+Copy code
+// pages/transactions.js
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+
+export default function Transactions() {
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    async function fetchTransactions() {
+      try {
+        const response = await axios.get('/api/transactions');
+        setTransactions(response.data);
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      }
+    }
+
+    fetchTransactions();
+  }, []);
+
+  return (
+    <div>
+      <h1>Transactions</h1>
+      <ul>
+        {transactions.map((transaction, index) => (
+          <li key={index}>
+            <p>ID: {transaction.idempotencyId}</p>
+            <p>Amount: {transaction.amount}</p>
+            <p>Type: {transaction.type}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+javascript
+Copy code
+// pages/api/transactions.js
+import { DynamoDB } from 'aws-sdk';
+
+const dynamodb = new DynamoDB.DocumentClient({ region: 'YOUR_AWS_REGION' });
+
+export default async function handler(req, res) {
+  const params = {
+    TableName: 'YOUR_DYNAMODB_TABLE_NAME'
+  };
+
+  try {
+    const result = await dynamodb.scan(params).promise();
+    res.status(200).json(result.Items);
+  } catch (error) {
+    console.error('Error fetching transactions from DynamoDB:', error);
+    res.status(500).json({ error: 'Failed to fetch transactions' });
+  }
+}
+Certifique-se de substituir 'YOUR_AWS_REGION', 'YOUR_SQS_QUEUE_URL', 'YOUR_DYNAMODB_TABLE_NAME' pelos valores apropriados em seu ambiente AWS.
+
+Para executar o projeto Next.js, você pode usar npm run dev ou yarn dev. Certifique-se de ter configurado as credenciais da AWS corretamente em seu ambiente.

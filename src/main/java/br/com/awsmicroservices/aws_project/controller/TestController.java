@@ -1,4 +1,4 @@
-package br.com.controller;
+package br.com.awsmicroservices.aws_project.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
